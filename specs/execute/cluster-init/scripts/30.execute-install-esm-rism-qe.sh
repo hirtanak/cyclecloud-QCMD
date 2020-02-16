@@ -41,15 +41,20 @@ fi
 tmpdir=$(mktemp -d)
 pushd $tmpdir
 
-# Azure VMs that have ephemeral storage mounted at /mnt/exports.
-if [ ! -d ${HOMEDIR}/apps ]; then
-   sudo -u ${CUSER} ln -s /mnt/exports/apps ${HOMEDIR}/apps
-   chown ${CUSER}:${CUSER} /mnt/exports/apps
-fi
-chown ${CUSER}:${CUSER} /mnt/exports/apps | exit 0
-
 # install packages
-yum install -y htop perl-Digest-MD5.x86_64 redhat-lsb-core centos-release-scl
+yum install -y openssl-devel libgcrypt-devel
+yum remove -y cmake gcc
+
+# build setting
+# need "set +" setting for parameter proceesing
+set +u
+alias gcc=/opt/gcc-9.2.0/bin/gcc
+alias c++=/opt/gcc-9.2.0/bin/c++
+# PATH settings
+export PATH=/opt/gcc-9.2.0/bin/:$PATH
+export PATH=/opt/openmpi-4.0.2/bin:$PATH
+export LD_LIBRARY_PATH=/opt/gcc-9.2.0/lib64:$LD_LIBRARY_PATH
+set -u
 
 # License File Setting
 LICENSE=$(jetpack config LICENSE)
@@ -57,6 +62,7 @@ KEY=$(jetpack config KEY)
 (echo "export LICENSE_FILE=${LICENSE}"; echo "export KEY=${KEY}") > /etc/profile.d/qe.sh
 chmod a+x /etc/profile.d/qe.sh
 chown ${CUSER}:${CUSER} /etc/profile.d/qe.sh
+
 
 # download ESM RISM QuantumESPRESOO
 if [[ ! -f ${HOMEDIR}/apps/${QE_DL_VER} ]]; then

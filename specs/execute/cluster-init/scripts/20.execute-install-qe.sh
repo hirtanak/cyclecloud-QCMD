@@ -47,15 +47,21 @@ fi
 chown ${CUSER}:${CUSER} /mnt/exports/apps | exit 0
 
 # install packages
-yum install -y perl-Digest-MD5.x86_64 redhat-lsb-core centos-release-scl
-#yum install -y devtoolset-8-gcc devtoolset-8-gcc-c++ devtoolset-8-gcc-gfortran
+yum install -y openssl-devel libgcrypt-devel
+yum remove -y cmake gcc
 
-# License File Setting
-#LICENSE=$(jetpack config LICENSE)
-#KEY=$(jetpack config KEY)
-#(echo "export LICENSE_FILE=${LICENSE}"; echo "export KEY=${KEY}") > /etc/profile.d/qe.sh
-#chmod a+x /etc/profile.d/qe.sh
-#chown ${CUSER}:${CUSER} /etc/profile.d/qe.sh
+
+# build setting
+# need "set +" setting for parameter proceesing
+set +u
+alias gcc=/opt/gcc-9.2.0/bin/gcc
+alias c++=/opt/gcc-9.2.0/bin/c++
+# PATH settings
+export PATH=/opt/gcc-9.2.0/bin/:$PATH
+export PATH=/opt/openmpi-4.0.2/bin:$PATH
+export LD_LIBRARY_PATH=/opt/gcc-9.2.0/lib64:$LD_LIBRARY_PATH
+set -u
+
 
 # Don't run if we've already expanded the QuantumESPRESSO file.
 if [[ ! -f ${HOMEDIR}/apps/qe-${QE_VERSION}-ReleasePack.tgz ]]; then
@@ -71,14 +77,7 @@ if [[ -z ${CMD} ]]; then
 fi
 
 # build and install
-#set +u
-#CMD1=$(grep devtoolset-8 ${HOMEDIR}/.bashrc | head -1) | exit 0
-##if [[ -n ${CMD1} ]]; then
-#   (echo "export PATH=$PATH:/opt/rh/devtoolset-8/root/bin") >> ${HOMEDIR}/.bashrc
-#fi
 if [[ ! -f ${HOMEDIR}/apps/${QE_DIR}/bin/pw.x ]]; then 
-#   export PATH=$PATH:/opt/rh/devtoolset-8/root/bin
-   alias gcc=/opt/gcc-9.2.0/bin/gcc
    make clean all | exit 0 
    ${HOMEDIR}/apps/${QE_DIR}/configure --with-internal-blas --with-internal-lapack
    chown ${CUSER}:${CUSER} ${HOMEDIR}/apps/${QE_DIR}/make.inc | exit 0

@@ -26,6 +26,13 @@ echo ${CUSER} > /mnt/exports/shared/CUSER
 HOMEDIR=/shared/home/${CUSER}
 CYCLECLOUD_SPEC_PATH=/mnt/cluster-init/QCMD/execute
 
+# Azure VMs that have ephemeral storage mounted at /mnt/exports.
+if [ ! -d ${HOMEDIR}/apps ]; then
+   sudo -u ${CUSER} ln -s /mnt/exports/apps ${HOMEDIR}/apps
+   chown ${CUSER}:${CUSER} /mnt/exports/apps
+fi
+chown ${CUSER}:${CUSER} /mnt/exports/apps | exit 0
+
 # installation
 yum install -y htop
 
