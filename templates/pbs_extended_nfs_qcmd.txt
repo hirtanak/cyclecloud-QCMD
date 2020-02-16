@@ -27,6 +27,8 @@ Autoscale = $Autoscale
         QE_DL_URL = $configuration_QE_DL_URL
 	GROMACS_VERSION = $configuration_GROMACS_VERSION
         LAMMPS_VERSION = $configuration_LAMMPS_VERSION
+        GEMESS_FILENAME = $configuration_GEMESS_FILENAME
+        GEMESS_CONFIG = $configuration_GEMESS_CONFIG
 	LICENSE = $configuration_LICENSE
         KEY = $configuration_KEY
 
@@ -224,7 +226,7 @@ Order = 20
         ParameterType = Cloud.Credentials
 
     [[parameters QCMD Settings ]]
-    Description = "Section for configuring Quantum ESPRESSO. If you want to use general version on gitlab, please put 6.5 and other version in "Q-ESPRESSO ver." box"
+    Description = Section for Quantum Chemistry and Molecular Dynamics (QCMD). QuantumESPRESSO: 6.5, and oters, ESM RISM QE, GROMACS: 2018/2019/2020, LAMMPS: 7Aug2019, GEMESS: your source. gemess-current.tar.gz
     Order = 26
 
         [[[parameter configuration_QE_VERSION]]]
@@ -264,6 +266,17 @@ Order = 20
             [[[[list Config.Entries]]]]
             Name = patch_4Feb2020
             Label = patch_4Feb2020
+
+        [[[parameter configuration_GEMESS_FILENAME]]]
+        required = False
+        label = GEMESS-US filename
+        Description = GEMESS-US filename
+
+        [[[parameter configuration_GEMESS_CONFIG]]]
+        required = False
+        label = GEMESS_FILENAME
+        Description = GEMESS_FILENAME
+        defaultvalue = https://raw.githubusercontent.com/hirtanak/cyclecloud-QCMD/master/specs/master/cluster-init/files/gemessconfig00
 
         [[[parameter configuration_LICENSE]]]
     	requied = False
@@ -417,8 +430,8 @@ Order = 30
     Order = 36
 
         [[[parameter VizNodesPublic]]]
-        Label = Public Viz Node
+        Label = Public PrePost Node
         DefaultValue = flase
         ParameterType = Boolean
-        Config.Label = Access Viz node from the Internet
+        Config.Label = Access PrePost node from the Internet
 	Order = 37
