@@ -1,18 +1,24 @@
-# Azure CycleCloud template for Siemens QCMD
+# Azure CycleCloud template for Quantum Chemistry and Molecular Dynamics (QCMD)
 
 ## Prerequisites
 
-1. Prepaire for your QCMD bilnary.
-2. Install CycleCloud CLI
+1. Install CycleCloud CLI
+
+## Applications
+
+1. QuantumESPRESOO
+1. ESM RISM QuantumESPRESOO
+1. LAMMPS 7Aug2019
+1. GROMACS 2020, 2019
 
 ## How to install 
 
 1. tar zxvf cyclecloud-QCMD<version>.tar.gz
 1. cd cyclecloud-QCMD<version>
 1. run "cyclecloud project upload azure-storage" for uploading template to CycleCloud
-1. "cyclecloud import_template -f templates/pbs_extended_nfs_quantumespresso.txt" for register this template to your CycleCloud
+1. "cyclecloud import_template -f templates/pbs_extended_nfs_qcmd.txt" for register this template to your CycleCloud
 
-## How to run Siemens QCMD
+## How to run QCMD
 
 1. Create Execute Node manually
 1. Check Node IP Address
