@@ -57,9 +57,13 @@ if [[ ! -d ${HOMEDIR}/apps/${LAMMPS_DIR} ]]; then
 fi
 
 # build setting
-alias gcc=/opt/gcc-9.2.0/bin/gcc
-alias c++=/opt/gcc-9.2.0/bin/c++
-export PATH=${HOMEDIR}/apps/${LAMMPS_DIR}/src/:/opt/openmpi-4.0.2/bin:$PATH
+alias gcc="/opt/gcc-9.2.0/bin/gcc"
+alias c++="/opt/gcc-9.2.0/bin/c++"
+alias g++="/opt/gcc-9.2.0/bin/g++"
+# need "set +/-" setting for parameter proceesing
+set +u
+OPENMPI_PATH=$(ls /opt/ | grep openmpi)
+export PATH=${HOMEDIR}/apps/${LAMMPS_DIR}/src/:/opt/${OPENMPI_PATH}/bin:$PATH
 
 # build and install
 if [[ ! -f ${HOMEDIR}/apps/${LAMMPS_DIR}/bin/lmp_mpi ]]; then 

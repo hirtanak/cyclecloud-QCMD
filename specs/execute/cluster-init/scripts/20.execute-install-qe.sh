@@ -52,13 +52,14 @@ yum remove -y cmake gcc
 
 
 # build setting
-# need "set +" setting for parameter proceesing
-set +u
 alias gcc=/opt/gcc-9.2.0/bin/gcc
 alias c++=/opt/gcc-9.2.0/bin/c++
 # PATH settings
 export PATH=/opt/gcc-9.2.0/bin/:$PATH
-export PATH=/opt/openmpi-4.0.2/bin:$PATH
+# need "set +/-" setting for parameter proceesing
+set +u
+OPENMPI_PATH=$(ls /opt/ | grep openmpi)
+export PATH=/opt/${OPENMPI_PATH}/bin:$PATH
 export LD_LIBRARY_PATH=/opt/gcc-9.2.0/lib64:$LD_LIBRARY_PATH
 set -u
 

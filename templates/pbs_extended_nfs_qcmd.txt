@@ -19,7 +19,7 @@ Autoscale = $Autoscale
     KeyPairLocation = ~/.ssh/cyclecloud.pem
 #    KeyPairLocation = ~/examples/id_rsaccuser 
    
-        [[[cluster-init QCMD:default:1.0.0]]]
+        [[[cluster-init QCMD:default:1.0.1]]]
         Optional = True
 
         [[[configuration]]]
@@ -27,10 +27,12 @@ Autoscale = $Autoscale
         QE_DL_URL = $configuration_QE_DL_URL
 	GROMACS_VERSION = $configuration_GROMACS_VERSION
         LAMMPS_VERSION = $configuration_LAMMPS_VERSION
-        GEMESS_FILENAME = $configuration_GEMESS_FILENAME
-        GEMESS_CONFIG = $configuration_GEMESS_CONFIG
+        GAMESS_FILENAME = $configuration_GAMESS_FILENAME
+        GAMESS_CONFIG = $configuration_GAMESS_CONFIG
+        GAMESS_DOWNLOAD_PASSWORD = $configuration_GAMESS_DOWNLOAD_PASSWORD
 	LICENSE = $configuration_LICENSE
         KEY = $configuration_KEY
+	AUTOMATIC_COMPILE = $configuration_AUTOMATIC_COMPILE
 
     [[node master]]
     MachineType = $MasterMachineType
@@ -40,7 +42,7 @@ Autoscale = $Autoscale
 
         [[[configuration]]]
 
-        [[[cluster-init QCMD:master:1.0.0]]]
+        [[[cluster-init QCMD:master:1.0.1]]]
         Optional = True
 
         [[[network-interface eth0]]]
@@ -85,7 +87,7 @@ Autoscale = $Autoscale
 
         [[[configuration]]]
 
-        [[[cluster-init QCMD:execute:1.0.0]]]
+        [[[cluster-init QCMD:execute:1.0.1]]]
         Optional = True
 
         [[[network-interface eth0]]]
@@ -99,17 +101,17 @@ Autoscale = $Autoscale
     [[node prepost]]
     MachineType = $VizMachineType
     ImageName = $ImageNameViz
-    AdditionalClusterInitSpecs = $ClusterInitSpecs
+    AdditionalClusterInitSpecs = $VizClusterInitSpecs
     InstallJetpack = true
     JetpackPlatform = ${configuration_prepost_jetpack_platform[ImageName]}
     AwaitInstallation = true
 
     Username = $Username
-    Password = $WindowsPassword
+#    Password = $WindowsPassword
 
         [[[configuration]]]
 
-        [[[cluster-init QCMD:viz:1.0.0]]]
+        [[[cluster-init QCMD:viz:1.0.1]]]
         Optional = True
 
         [[[network-interface eth0]]]
@@ -180,7 +182,6 @@ Order = 1
             Name = Standard_HB60rs_v2
             Label = Standard_HB60rs_v2
 
-
     [[parameters Auto-Scaling]]
     Description = "The cluster can autoscale to the workload, adding execute hosts as jobs are queued. To enable this check the box below and choose the initial and maximum core counts for the cluster"
     Order = 8
@@ -226,7 +227,7 @@ Order = 20
         ParameterType = Cloud.Credentials
 
     [[parameters QCMD Settings ]]
-    Description = Section for Quantum Chemistry and Molecular Dynamics (QCMD). QuantumESPRESSO: 6.5, and oters, ESM RISM QE, GROMACS: 2018/2019/2020, LAMMPS: 7Aug2019, GEMESS: your source. gemess-current.tar.gz
+    Description = Section for Quantum Chemistry and Molecular Dynamics (QCMD). QuantumESPRESSO: 6.5, and oters, ESM RISM QE, GROMACS: 2018/2019/2020, LAMMPS: 7Aug2019, GAMESS: your source. gemess-current.tar.gz
     Order = 26
 
         [[[parameter configuration_QE_VERSION]]]
@@ -238,7 +239,6 @@ Order = 20
 	required = False
 	label = ESM RISM QE URL
 	Description = Download URL for Special(EIS) Quantum ESPRESSO
-	defaultvalue = https://staff.aist.go.jp/minoru.otani/q-e20180928.tgz
         config.plugin = pico.control.AutoCompleteDropdown
             [[[[list Config.Entries]]]]
             Name = None
@@ -264,19 +264,25 @@ Order = 20
             Name = stable_7Aug2019
             Label = stable_7Aug2019
             [[[[list Config.Entries]]]]
-            Name = patch_4Feb2020
-            Label = patch_4Feb2020
+            Name = stable_3Mar2020
+            Label = stable_3Mar2020
 
-        [[[parameter configuration_GEMESS_FILENAME]]]
+        [[[parameter configuration_GAMESS_FILENAME]]]
         required = False
-        label = GEMESS-US filename
-        Description = GEMESS-US filename
+        label = GAMESS-US filename
+        Description = GAMESS-US filename
+        defaultvalue = gamess-current.tar.gz
 
-        [[[parameter configuration_GEMESS_CONFIG]]]
+        [[[parameter configuration_GAMESS_CONFIG]]]
         required = False
-        label = GEMESS_FILENAME
-        Description = GEMESS_FILENAME
+        label = GAMESS config file
+        Description = GAMESS config file
         defaultvalue = https://raw.githubusercontent.com/hirtanak/cyclecloud-QCMD/master/specs/master/cluster-init/files/gemessconfig00
+
+        [[[parameter configuration_GAMESS_DOWNLOAD_PASSWORD]]]
+        required = False
+        label = GAMESS DL Pass
+        Description = GAMESS-US Download Password
 
         [[[parameter configuration_LICENSE]]]
     	requied = False
@@ -287,6 +293,12 @@ Order = 20
         requied = False
 	label = Key
         Description = "License Key"
+
+        [[[parameter configuration_AUTOMATIC_COMPILE]]]
+        Label = Automatic Compile
+        Description = "Job Submission for Automatic Compile 
+        DefaultValue = false
+        ParameterType = Boolean
 
     [[parameters Software]]
     Description = "Specify the scheduling software, and base OS installed on all nodes, and optionally the cluster-init and chef versions from your Locker."
@@ -339,32 +351,47 @@ Order = 20
         Config.Label = Access execute nodes from the Internet
         Conditions.Excluded := UsePublicNetwork isnt true
 
-[parameters PrePost Node Settings]
-Order = 30
 
-    [[parameters PrePost Visualization Node Settings]]
-    Description = Vizualization Node settings. image example, microsoft-ads:microsoft-ads:windows-data-science-vm:windows2016:latest
-    Order = 35
+[parameters VizNode Setting]
+Order = 100
+
+    [[parameters Vizualization Nodes Settings]]
+    Order = 101
 
         [[[parameter VizMachineType]]]
+        Required = False
         Label = Viz VM Type
-        Description = The VM type for pre/post node
+        Description = The VM type for scheduler master and shared filer.
         ParameterType = Cloud.MachineType
-        DefaultValue = Standard_DS3_v2
+        DefaultValue = Standard_D2s_v3
 
-        [[[parameter ImageNameViz]]]
-        Label = prepost VM OS
-        DefaultValue = cycle.image.win2016
+        [[[parameter Image Reference]]]
+        Label = OS Image Reference
         config.plugin = pico.control.AutoCompleteDropdown
             [[[[list Config.Entries]]]]
+            Name = cycle.image.centos7
+            Label = CentOS 7 - cycle.image.centos7
+            [[[[list Config.Entries]]]]
+            Name = cycle.image.ubuntu16
+            Label = Ubuntu 16 - cycle.image.ubuntu16
+            [[[[list Config.Entries]]]]
+            Name = cycle.image.win2016
+            Label = Windows 2016 - cycle.image.win2016
+            [[[[list Config.Entries]]]]
             Name = MicrosoftWindowsDesktop:Windows-10:19h2-ent:latest
-            Label = Windows-10 1902
+            Label = Windows 10 Entterprize 1909 Gen1 - MicrosoftWindowsDesktop:Windows-10:19h2-ent:latest
+            [[[[list Config.Entries]]]]
+            Name = MicrosoftWindowsDesktop:Windows-10:19h2-pro-g2:latest
+            Label = Windows 10 Pro 1909 Gen2 - MicrosoftWindowsDesktop:Windows-10:19h2-pro-g2:latest
+            [[[[list Config.Entries]]]]
+            Name = MicrosoftWindowsDesktop:Windows-10:19h1-ent:latest
+            Label = Windows 10 Enterprize 1903 Gen1 - MicrosoftWindowsDesktop:Windows-10:19h1-ent:latest
             [[[[list Config.Entries]]]]
             Name = nvidia:nvidia-quadro-vws-win2016:win2016-19-04-grid8:19.04:latest
             Label = NVIDIA Quadro WS2016
             [[[[list Config.Entries]]]]
             Name = nvidia:nvidia-quadro-vws-win2019:nvidia-quadro-vws-win2019-19-04:19.04:latest
-            Label = NVIDIA Quadro WS2019
+            Label = NVIDIA Quadro WS2019 - nvidia:nvidia-quadro-vws-win2019:nvidia-quadro-vws-win2019-19-04:19.04:latest
             [[[[list Config.Entries]]]]
             Name = cycle.image.win2016
             Label = Basic Windows 2016
@@ -373,14 +400,13 @@ Order = 30
             Label = centos7
             [[[[list Config.Entries]]]]
             Name = microsoft-ads:windows-data-science-vm:windows2016:latest
-            Label = DSVM Windows 2016
+            Label = DSVM Windows 2016 - microsoft-ads:windows-data-science-vm:windows2016:latest
             [[[[list Config.Entries]]]]
             Name = microsoft-ads:linux-data-science-vm:linuxdsvm:latest
-            Label = DSVM CentOS
+            Label = DSVM CentOS - microsoft-ads:linux-data-science-vm:linuxdsvm:latest
             [[[[list Config.Entries]]]]
             Name = microsoft-ads:linux-data-science-vm-ubuntu:linuxdsvmubuntu:latest
-            Label = DSVM Ubuntu
-        ImageName = $CustomImageName
+            Label = DSVM Ubuntu - microsoft-ads:linux-data-science-vm-ubuntu:linuxdsvmubuntu:latest
 
         [[[parameter configuration_prepost_jetpack_platform]]]
         required = True
@@ -388,7 +414,10 @@ Order = 30
         parametertype = hidden
             [[[[record DefaultValue]]]]
             centos7 = centos-7
-            Windows-10-1902 = windows
+            Windows-10-Ent-1909 = windows
+            Windows-10-Ent-1903 = windows
+            Windows-10 Pro 1909 = windows
+            MicrosoftWindowsDesktop:Windows-10:19h2-ent:latest = windows
             NVIDIA Quadro WS2016 = windows
             NVIDIA Quadro WS2019 = windows
             Basic Windows 2016 = windows
@@ -396,14 +425,31 @@ Order = 30
             DSVM CentOS = centos-7
             DSVM Ubuntu = ubuntu-16.04
 
-        [[[parameter CustomImageName]]]
-        Label = Custom Image
+        [[[parameter ImaageWarning]]]
+        HideLabel = true
+        Config.Plugin = pico.widget.HtmlTemplateWidget
+        Config.Template := """<p style=\"padding: 20px\"><span class=\"alert-warn warning\"><strong>Imanage Choice:<br>If you want various images for Viz Node. Please copy 'Azure urn' from Image Reference to Viz Node OS. like this. ex. MicrosoftWindowsDesktop:Windows-10:19h1-ent:latest </strong></span></p>"""
 
-        [[[parameter ClusterInitSpecs]]]
-        Label = Cluster-Init
+        [[[parameter ImageNameViz]]]
+        Label = Viz Node OS
+        ParameterType = Cloud.Image
+        Config.OS = linux
+        DefaultValue = MicrosoftWindowsDesktop:Windows-10:19h2-pro:latest
+
+        [[[parameter VizClusterInitSpecs]]]
+        Label = VizNode Cluster-Init
         DefaultValue = =undefined
-        Description = Cluster init specs to apply to the node
+        Description = Cluster init specs to apply to Viz node
         ParameterType = Cloud.ClusterInitSpecs
+
+        [[[parameter configuration_jetpack_platform]]]
+        required = True
+        label = Jetpack Platform
+        parametertype = hidden
+            [[[[record DefaultValue]]]]
+            centos-7 = centos-7
+            ubuntu-16 = ubuntu-16.04
+            windows = windows
 
         [[[parameter Username]]]
         Label = Username
@@ -411,13 +457,13 @@ Order = 30
         DefaultValue = cyclecloud
         Required = True
 
-        [[[parameter WindowsPassword]]]
-        Label = Password
-        ParameterType = Password
-        DefaultValue = Microsoft123!
-        Description = The password for the built-in local user on windows nodes for direct access.
-        Conditions.Required := startswith("win", configuration_ImageNameViz)
-        Conditions.Excluded := !startswith("win", configuration_ImageNameViz)
+#        [[[parameter WindowsPassword]]]
+#         Label = Password
+#         ParameterType = Password
+#         DefaultValue = Microsoft123!
+#         Description = The password for the built-in local user on windows nodes for direct access.
+#         Conditions.Required := startswith("win", configuration_ImageNameViz)
+#         Conditions.Excluded := !startswith("win", configuration_ImageNameViz)
 
         [[[parameter WindowsWarning]]]
         HideLabel = true
@@ -425,13 +471,12 @@ Order = 30
         Config.Template := """<p style=\"padding: 20px\"><span class=\"alert-warn warning\"><strong>WARNING:<br>The Windows VM does not support ReturnProxy mode.<br>Please ensure that CycleCloud is in the same Virtual Network as the VM or add a dedicated linux proxy node.</strong></span></p>"""
         Conditions.Excluded := !startswith("win", configuration_ImageNameViz)
 
-    [[parameters Visualization Node Networking]]
-    Description = Vizualization Node Networking setting
-    Order = 36
+    [[parameters Vizualization Nodes Networking]]
+    Order = 102
 
         [[[parameter VizNodesPublic]]]
-        Label = Public PrePost Node
-        DefaultValue = flase
+        Label = Public Viz Node
+        DefaultValue = true
         ParameterType = Boolean
-        Config.Label = Access PrePost node from the Internet
-	Order = 37
+        Config.Label = Access Vitualization nodes from the Internet
+        Conditions.Excluded := UsePublicNetwork isnt true

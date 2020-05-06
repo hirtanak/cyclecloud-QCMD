@@ -77,6 +77,7 @@ fi
 # build and install
 if [[ ! -f ${HOMEDIR}/apps/${QE_DL_VER%%.*}/bin/pw.x ]]; then 
    alias gcc=/opt/gcc-9.2.0/bin/gcc
+   export PATH=/opt/gcc-9.2.0/bin:$PATH
    make clean all | exit 0 
    ${HOMEDIR}/apps/${QE_DL_VER%%.*}/configure --with-internal-blas --with-internal-lapack
    chown ${CUSER}:${CUSER} ${HOMEDIR}/apps/${QE_DL_VER%%.*}/make.inc | exit 0

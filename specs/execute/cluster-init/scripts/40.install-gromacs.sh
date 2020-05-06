@@ -42,14 +42,15 @@ yum remove -y cmake gcc
 
 
 # build setting
-# need "set +" setting for parameter proceesing
-set +u
 alias gcc=/opt/gcc-9.2.0/bin/gcc
 alias c++=/opt/gcc-9.2.0/bin/c++
 # PATH settings
 export PATH=/opt/gcc-9.2.0/bin/:$PATH
 export PATH=${HOMEDIR}/apps/cmake-${CMAKE_VERSION}-Linux-x86_64/bin:$PATH
-export PATH=/opt/openmpi-4.0.2/bin:$PATH
+# need "set +/-" setting for parameter proceesing
+set +u
+OPENMPI_PATH=$(ls /opt/ | grep openmpi)
+export PATH=/opt/${OPENMPI_PATH}/bin:$PATH
 export LD_LIBRARY_PATH=/opt/gcc-9.2.0/lib64:$LD_LIBRARY_PATH
 CMD=$(grep "cmake" ${HOMEDIR}/.bashrc | head -1)
 if [[ -z ${CMD} ]]; then
@@ -80,7 +81,7 @@ if [[ ! -d ${HOMEDIR}/apps/gromacs-${GROMACS_VERSION}/bin ]]; then
    chown ${CUSER}:${CUSER} ${HOMEDIR}/apps/gromacs-${GROMACS_VERSION}/build
    # check cmake version
    if [[ -f ${HOMEDIR}/apps/cmake-${CMAKE_VERSION}-Linux-x86_64/bin/cmake ]]; then
-      cd ${HOMEDIR}/apps/gromacs-${GROMACS_VERSION}/build && sudo -u ${CUSER} ${HOMEDIR}/apps/cmake-${CMAKE_VERSION}-Linux-x86_64/bin/cmake ${HOMEDIR}/apps/gromacs-${GROMACS_VERSION} -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON -DCMAKE_C_COMPILER="/opt/openmpi-4.0.2/bin/mpicc" -DCMAKE_CXX_COMPILER="/opt/openmpi-4.0.2/bin/mpicxx" -DCMAKE_INSTALL_PREFIX="${HOMEDIR}/apps/gromacs-${GROMACS_VERSION}" ${PLATFORM} -DGMX_MPI=on
+      cd ${HOMEDIR}/apps/gromacs-${GROMACS_VERSION}/build && sudo -u ${CUSER} ${HOMEDIR}/apps/cmake-${CMAKE_VERSION}-Linux-x86_64/bin/cmake ${HOMEDIR}/apps/gromacs-${GROMACS_VERSION} -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON -DCMAKE_C_COMPILER="/opt/${OPENMPI_PATH}/bin/mpicc" -DCMAKE_CXX_COMPILER="/opt/${OPENMPI_PATH}/bin/mpicxx" -DCMAKE_INSTALL_PREFIX="${HOMEDIR}/apps/gromacs-${GROMACS_VERSION}" ${PLATFORM} -DGMX_MPI=on
       make install
       chown -R ${CUSER}:${CUSER} ${HOMEDIR}/apps/gromacs-${GROMACS_VERSION}
    fi
