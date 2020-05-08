@@ -6,9 +6,9 @@
 
 ## Applications
 
-1. QuantumESPRESOO
-1. ESM RISM QuantumESPRESOO
-1. LAMMPS 7Aug2019
+1. QuantumESPRESOO 6.5
+1. ESM RISM QuantumESPRESOO (9th May 2020 Update: Missing the original link)
+1. LAMMPS 7Aug2019, 3Mar2020
 1. GROMACS 2020, 2019
 
 ## How to install 
@@ -28,7 +28,7 @@
 ## Known Issues
 1. This tempate support only single administrator. So you have to use same user between superuser(initial Azure CycleCloud User) and deployment user of this template
 
-# Azure CycleCloud用テンプレート:QCMD(NFS/PBSPro)
+# Azure CycleCloud用テンプレート:QCMD with OSS PBS Pro
 
 [Azure CycleCloud](https://docs.microsoft.com/en-us/azure/cyclecloud/) はMicrosoft Azure上で簡単にCAE/HPC/Deep Learning用のクラスタ環境を構築できるソリューションです。
 
@@ -36,11 +36,11 @@
 
 Azure CyceCloudのインストールに関しては、[こちら](https://docs.microsoft.com/en-us/azure/cyclecloud/quickstart-install-cyclecloud) のドキュメントを参照してください。
 
-QCMD用のテンプレートになっています。
+第一原理、量子化学、分子動力学アプリケーション用のテンプレートになっています。
 以下の構成、特徴を持っています。
 
-1. OSS PBS ProジョブスケジューラをMasterノードにインストール
-2. H16r, H16r_Promo, HC44rs, HB60rsを想定したテンプレート、イメージ
+1. OSS PBS ProジョブスケジューラをMasterノードにインストール、計算ノード(Execノード)にも自動設定
+2. H16r, H16r_Promo, HC44rs, HB60rs, HB120rs_v2を想定したテンプレート、イメージ
 	 - OpenLogic CentOS 7.6 HPC を利用 
 3. Masterノードに512GB * 2 のNFSストレージサーバを搭載
 	 - Executeノード（計算ノード）からNFSをマウント
@@ -49,7 +49,7 @@ QCMD用のテンプレートになっています。
 
 ![OSS PBS Default テンプレート構成](https://raw.githubusercontent.com/hirtanak/osspbsdefault/master/OSSPBSDefaultDiagram.png "OSS PBS Default テンプレート構成")
 
-OSS PBS Defaultテンプレートインストール方法
+QCMDテンプレートインストール方法
 
 前提条件: テンプレートを利用するためには、Azure CycleCloud CLIのインストールと設定が必要です。詳しくは、 [こちら](https://docs.microsoft.com/en-us/azure/cyclecloud/install-cyclecloud-cli) の文書からインストールと展開されたAzure CycleCloudサーバのFQDNの設定が必要です。
 
