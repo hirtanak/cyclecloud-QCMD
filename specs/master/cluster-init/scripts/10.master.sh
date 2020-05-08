@@ -42,7 +42,13 @@ if [ ! -d ${HOMEDIR}/apps ]; then
 fi
 chown -R ${CUSER}:${CUSER} /mnt/exports/apps | exit 0
 
+# package set up
 yum install -y htop
+# submit compile job
+if [[ ! -f ${HOMEDIR}/azcopy ]]; then
+   jetpack download azcopy ${HOMEDIR} --project QCMD
+   chown ${CUSER}:${CUSER} ${HOMEDIR}/azcopy
+fi
 
 # file settings
 chown -R ${CUSER}:${CUSER} ${HOMEDIR}/apps 
