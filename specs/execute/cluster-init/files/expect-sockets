@@ -1,0 +1,44 @@
+#!/bin/csh -f
+
+umask 022
+set file_gamess=/shared/home/azureuser/apps/gamess-current.tar.gz
+set work=/shared/home/azureuser/apps/
+set gamess=gamess-sockets
+set prefix=/shared/home/azureuser/apps/$gamess
+#set patch_compall=/home/users/${USER}/build/gamess2017Nov11/compall.patch
+#set patch_rungms=/home/users/${USER}/build/gamess2017Nov11/cclx/rungms.patch
+#----------------------------------------------------------------------------
+cd ${work}/${gamess}
+
+expect <<EXPECT
+spawn /shared/home/azureuser/apps/gamess-sockets/config
+expect "After the new window is open"
+send "\r"
+expect "please enter your target machine name:"
+send "linux64\r"
+expect "GAMESS directory?"
+send "$prefix\r"
+expect "GAMESS build directory?"
+send "$prefix\r"
+expect "Version?"
+send "\r"
+expect "Please enter your choice of FORTRAN:"
+send "gfortran\r"
+expect "Version?"
+send "4.8\r"
+expect "hit <return> to continue to the math library setup."
+send "\r"
+expect "Enter your choice of 'mkl' or 'atlas' or 'acml' or 'pgiblas' or 'none':"
+send "none\r"
+expect "please hit <return> to compile the GAMESS source code activator"
+send "\r"
+expect "please hit <return> to set up your network for Linux clusters."
+send "\r"
+expect "communication library ('sockets' or 'mpi')?"
+send "sockets\r"
+expect "Optional: Build Michigan State University CCT3 & CCSD3A methods?  (yes/no):"
+send "no\r"
+expect "Do you want to try LIBCCHEM"
+send "no\r"
+expect eof
+EXPECT
