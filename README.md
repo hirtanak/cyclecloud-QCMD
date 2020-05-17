@@ -6,10 +6,24 @@
 
 ## Applications
 
+### Cluster Application
 1. QuantumESPRESOO 6.5
 1. ESM RISM QuantumESPRESOO (9th May 2020 Update: Missing the original link)
 1. LAMMPS 7Aug2019, 3Mar2020
 1. GROMACS 2020, 2019
+1. GAMESS US (Need to get source file set up project.ini and locates in blobs directory)
+1. NAMD (Need to get source file set up project.ini and locates in blobs directory)
+
+### Windows VM Application
+1. Paraview 5.7.0
+1. VMD (Need to get source file set up project.ini and locates in blobs directory)
+
+### Support Functions
+1. OSS PBS Pro job scheduler environment
+1. NFS Server 1TB in master node
+1. Fixed Global IP
+1. Support VM: H16r, H16r_Promo, HC44rs, HB60rs, HB120rs_v2 
+1. Windows NFS client and mount (WIP)
 
 ## How to install 
 
@@ -39,28 +53,41 @@ Azure CyceCloudのインストールに関しては、[こちら](https://docs.m
 第一原理、量子化学、分子動力学アプリケーション用のテンプレートになっています。
 以下の構成、特徴を持っています。
 
+## Cluster アプリケーション
+1. QuantumESPRESOO 6.5
+1. ESM RISM QuantumESPRESOO (9th May 2020 Update: Missing the original link)
+1. LAMMPS 7Aug2019, 3Mar2020
+1. GROMACS 2020, 2019
+1. GAMESS US (Need to get source file set up project.ini and locates in blobs directory)
+1. NAMD (Need to get source file set up project.ini and locates in blobs directory)
+
+## Windows VM アプリケーション
+1. Paraview 5.7.0
+1. VMD (Need to get source file set up project.ini and locates in blobs directory)
+
+## その他の機能
 1. OSS PBS ProジョブスケジューラをMasterノードにインストール、計算ノード(Execノード)にも自動設定
-2. H16r, H16r_Promo, HC44rs, HB60rs, HB120rs_v2を想定したテンプレート、イメージ
+1. H16r, H16r_Promo, HC44rs, HB60rs, HB120rs_v2を想定したテンプレート、イメージ
 	 - OpenLogic CentOS 7.6 HPC を利用 
-3. Masterノードに512GB * 2 のNFSストレージサーバを搭載
+1. Masterノードに512GB * 2 のNFSストレージサーバを搭載
 	 - Executeノード（計算ノード）からNFSをマウント
-4. MasterノードのIPアドレスを固定設定
+1. MasterノードのIPアドレスを固定設定
 	 - 一旦停止後、再度起動した場合にアクセスする先のIPアドレスが変更されない
 
 ![OSS PBS Default テンプレート構成](https://raw.githubusercontent.com/hirtanak/osspbsdefault/master/OSSPBSDefaultDiagram.png "OSS PBS Default テンプレート構成")
 
-QCMDテンプレートインストール方法
+## QCMDテンプレートインストール方法
 
 前提条件: テンプレートを利用するためには、Azure CycleCloud CLIのインストールと設定が必要です。詳しくは、 [こちら](https://docs.microsoft.com/en-us/azure/cyclecloud/install-cyclecloud-cli) の文書からインストールと展開されたAzure CycleCloudサーバのFQDNの設定が必要です。
 
 1. テンプレート本体をダウンロード
-2. 展開、ディレクトリ移動
-3. cyclecloudコマンドラインからテンプレートインストール 
+1. 展開、ディレクトリ移動
+1. cyclecloudコマンドラインからテンプレートインストール 
    - tar zxvf cyclecloud-QCMD<version>.tar.gz
    - cd cyclecloud-QCMD<version>
    - cyclecloud project upload azure-storage
    - cyclecloud import_template -f templates/pbs_extended_nfs_quantumespresso.txt
-4. 削除したい場合、 cyclecloud delete_template QCMD コマンドで削除可能
+1. 削除したい場合、 cyclecloud delete_template QCMD コマンドで削除可能
 
 ***
 Copyright Hiroshi Tanaka, hirtanak@gmail.com, @hirtanak All rights reserved.
