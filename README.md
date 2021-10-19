@@ -9,7 +9,7 @@
 ### Cluster Application
 1. QuantumESPRESOO 6.5
 1. ESM RISM QuantumESPRESOO (9th May 2020 Update: Missing the original link)
-1. LAMMPS 7Aug2019, 3Mar2020
+1. LAMMPS 7Aug2019, 3Mar2020, 29Oct2020, 29Sep2021
 1. GROMACS 2020, 2019
 1. GAMESS US (Need to get source file set up project.ini and locates in blobs directory)
 1. NAMD 2.14b1 (Need to get source file set up project.ini and locates in blobs directory)
