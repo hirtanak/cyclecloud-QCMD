@@ -100,6 +100,14 @@ QSELECT_EXE = os.path.join(pbs.pbs_conf['PBS_EXEC'], 'bin', 'qselect')
 QSTAT_EXE = os.path.join(pbs.pbs_conf['PBS_EXEC'], 'bin', 'qstat')
 QALTER_EXE = os.path.join(pbs.pbs_conf['PBS_EXEC'], 'bin', 'qalter')
 QRLS_EXE = os.path.join(pbs.pbs_conf['PBS_EXEC'], 'bin', 'qrls')
+QHOLD_EXE = os.path.join(pbs.pbs_conf['PBS_EXEC'], 'bin', 'qhold')
+
+
+def unset_hold_so(job_id, job):
+    if "depend" in job and not job["depend"].startswith("before"):
+        run_cmd([QRLS_EXE, "-h", "o", job_id])
+    else:
+        run_cmd([QRLS_EXE, "-h", "so", job_id])
 
 
 def periodic_release_hook(hook_config, e):
@@ -130,13 +138,12 @@ def periodic_release_hook(hook_config, e):
     qstat_json = json.loads(stdout)
     jobs = qstat_json["Jobs"]
     
-    for job_id, job in jobs.iteritems():
+    for job_id, job in jobs.items():
         # Reevaluate each held job
         debug("Key: %s\nValue: %s" % (job_id, job))
         if str(job["Resource_List"].get("ungrouped")).lower() == "true":
             debug("Skipping ungrouped job %s" % job_id)
-            qrls_cmd = [QRLS_EXE, "-h", "so", job_id]
-            run_cmd(qrls_cmd)
+            unset_hold_so(job_id, job)
             continue
         
         j_queue = job["queue"]
@@ -168,7 +175,7 @@ def periodic_release_hook(hook_config, e):
                         default_place_dict.pop("arrangement", "")
                     
                     # update if not exist from defaults
-                    for k, v in default_place_dict.iteritems():
+                    for k, v in default_place_dict.items():
                         mj_place_dict[k] = mj_place_dict.get(k, v)
                         
                     # the job is a -l nodes job and the queue didn't specify arrangement or sharing
@@ -212,8 +219,7 @@ def periodic_release_hook(hook_config, e):
             debug("stdout %s" % stdout)
             
         debug("Release the hold on job %s" % job_id)
-        qrls_cmd = [QRLS_EXE, "-h", "so", job_id]
-        run_cmd(qrls_cmd)
+        unset_hold_so(job_id, job)
         
     e.accept()
 
@@ -222,6 +228,9 @@ def run_cmd(cmd):
     debug("Cmd: %s" % cmd)
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = proc.communicate()
+    if hasattr(stdout, "decode"):
+        stdout = stdout.decode()
+        stderr = stderr.decode()
     if proc.returncode != 0:
         msg = 'cmd failed!\n\tstdout="%s"\n\tstderr="%s"' % (stdout, stderr)
         error(msg)

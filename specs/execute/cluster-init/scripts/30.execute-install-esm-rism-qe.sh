@@ -5,10 +5,6 @@ set -exuv
 SW=esm-rism-qe
 echo "starting 30.execute-install-${SW}.sh"
 
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-export LANGUAGE=en_US.UTF-8
-
 # disabling selinux
 echo "disabling selinux"
 setenforce 0
@@ -22,7 +18,7 @@ if [[ -z $CUSER ]]; then
    CUSER=$(grep "Added user" /opt/cycle/jetpack/logs/initialize.log | awk '{print $6}' | head -1)
    CUSER=${CUSER//\`/}
 fi
-echo ${CUSER} > /mnt/exports/shared/CUSER
+echo ${CUSER} > /shared/CUSER
 HOMEDIR=/shared/home/${CUSER}
 CYCLECLOUD_SPEC_PATH=/mnt/cluster-init/QCMD/execute
 
@@ -42,8 +38,8 @@ tmpdir=$(mktemp -d)
 pushd $tmpdir
 
 # install packages
-yum install -y openssl-devel libgcrypt-devel
-yum remove -y cmake gcc
+yum install -y -q openssl-devel libgcrypt-devel
+yum remove -y -q cmake gcc
 
 # build setting
 # need "set +" setting for parameter proceesing
@@ -56,6 +52,43 @@ export PATH=/opt/openmpi-4.0.2/bin:$PATH
 export LD_LIBRARY_PATH=/opt/gcc-9.2.0/lib64:$LD_LIBRARY_PATH
 set -u
 
+## GCC
+GCC_PATH=$(ls /opt/ | grep ^gcc-)
+GCC_VERSION=920
+if [ -z $GCC_PATH ]; then
+   GCC_VERSION=485
+fi
+
+# cmake version
+set +eu
+#echo $CMAKE_VERSION > /shared/CMAKE_VERSION
+CMAKE_VERSION=$(cat /shared/CMAKE_VERSION)
+if [ -z $CMAKE_VERSION ]; then
+  CMAKE_VERSION=3.21.4
+fi
+set -eu
+
+# download ESM RISM QuantumESPRESOO
+if [[ ! -f ${HOMEDIR}/${QE_DL_VER} ]]; then
+   wget -nv ${QE_DL_URL} -O ${HOMEDIR}/${QE_DL_VER}
+   chown ${CUSER}:${CUSER} ${HOMEDIR}/${QE_DL_VER}
+fi
+if [[ ! -d ${HOMEDIR}/${QE_DL_VER%%.*} ]]; then
+   tar zxfp ${HOMEDIR}/${QE_DL_VER} -C ${HOMEDIR}
+   chown ${CUSER}:${CUSER} ${HOMEDIR}/${QE_DL_VER}
+fi
+
+# build and install
+if [[ ! -f ${HOMEDIR}/${QE_DL_VER%%.*}/bin/pw.x ]]; then 
+   alias gcc=/opt/gcc-9.2.0/bin/gcc
+   export PATH=/opt/gcc-9.2.0/bin:$PATH
+   make clean all | exit 0 
+   ${HOMEDIR}/${QE_DL_VER%%.*}/configure --with-internal-blas --with-internal-lapack
+   chown ${CUSER}:${CUSER} ${HOMEDIR}/${QE_DL_VER%%.*}/make.inc | exit 0
+   #CORES=$(($(grep cpu.cores /proc/cpuinfo | wc -l) + 1))
+   cd ${HOMEDIR}/${QE_DL_VER%%.*} && make all #${CORES}
+fi
+
 # License File Setting
 LICENSE=$(jetpack config LICENSE)
 KEY=$(jetpack config KEY)
@@ -63,46 +96,23 @@ KEY=$(jetpack config KEY)
 chmod a+x /etc/profile.d/qe.sh
 chown ${CUSER}:${CUSER} /etc/profile.d/qe.sh
 
-
-# download ESM RISM QuantumESPRESOO
-if [[ ! -f ${HOMEDIR}/apps/${QE_DL_VER} ]]; then
-   wget -nv ${QE_DL_URL} -O ${HOMEDIR}/apps/${QE_DL_VER}
-   chown ${CUSER}:${CUSER} ${HOMEDIR}/apps/${QE_DL_VER}
-fi
-if [[ ! -d ${HOMEDIR}/apps/${QE_DL_VER%%.*} ]]; then
-   tar zxfp ${HOMEDIR}/apps/${QE_DL_VER} -C ${HOMEDIR}/apps
-   chown ${CUSER}:${CUSER} ${HOMEDIR}/apps/${QE_DL_VER}
-fi
-
-# build and install
-if [[ ! -f ${HOMEDIR}/apps/${QE_DL_VER%%.*}/bin/pw.x ]]; then 
-   alias gcc=/opt/gcc-9.2.0/bin/gcc
-   export PATH=/opt/gcc-9.2.0/bin:$PATH
-   make clean all | exit 0 
-   ${HOMEDIR}/apps/${QE_DL_VER%%.*}/configure --with-internal-blas --with-internal-lapack
-   chown ${CUSER}:${CUSER} ${HOMEDIR}/apps/${QE_DL_VER%%.*}/make.inc | exit 0
-   #CORES=$(($(grep cpu.cores /proc/cpuinfo | wc -l) + 1))
-   cd ${HOMEDIR}/apps/${QE_DL_VER%%.*} && make all #${CORES}
-fi
-
 # need set +u setting for parameter prcessing
 set +u
 CMD=$(grep ${QE_DL_VER%%.*} ${HOMEDIR}/.bashrc | head -1) | exit 0
 if [[ -n ${CMD} ]]; then
-   (echo "export PATH=${HOMEDIR}/apps/${QE_DL_VER%%.*}/bin:$PATH") >> ${HOMEDIR}/.bashrc
+   (echo "export PATH=${HOMEDIR}/${QE_DL_VER%%.*}/bin:$PATH") >> ${HOMEDIR}/.bashrc
 fi
-unset CMD && CMD=$(ls -la ${HOMEDIR}/apps/ | grep ${QE_DL_VER%%.*} | awk '{print $3}'| head -1)
+unset CMD && CMD=$(ls -la ${HOMEDIR} | grep ${QE_DL_VER%%.*} | awk '{print $3}'| head -1)
 if [[ -z ${CMD} ]]; then
-   chown -R ${CUSER}:${CUSER} ${HOMEDIR}/apps/${QE_DL_VER%%.*} | exit 0
+   chown -R ${CUSER}:${CUSER} ${HOMEDIR}/${QE_DL_VER%%.*} | exit 0
 fi
-chmod -R 755 ${HOMEDIR}/apps/${QE_DL_VER%%.*}
+chmod -R 755 ${HOMEDIR}/${QE_DL_VER%%.*}
 # need set +u setting for parameter prcessing
 set -u
 
 # file settings
-chown -R ${CUSER}:${CUSER} ${HOMEDIR}/apps 
-cp /opt/cycle/jetpack/logs/cluster-init/QCMD/execute/scripts/30.execute-install-${SW}.sh.out ${HOMEDIR}/
-chown ${CUSER}:${CUSER} ${HOMEDIR}/30.execute-install-${SW}.sh.out
+cp /opt/cycle/jetpack/logs/cluster-init/QCMD/execute/scripts/30.execute-install-${SW}.sh.out ${HOMEDIR}/logs/
+chown ${CUSER}:${CUSER} ${HOMEDIR}/logs/30.execute-install-${SW}.sh.out
 
 #clean up
 popd

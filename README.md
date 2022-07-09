@@ -7,10 +7,10 @@
 ## Applications
 
 ### Cluster Application
-1. QuantumESPRESOO 6.5
-1. ESM RISM QuantumESPRESOO (9th May 2020 Update: Missing the original link)
-1. LAMMPS 7Aug2019, 3Mar2020, 29Oct2020, 29Sep2021
-1. GROMACS 2020, 2019
+1. QuantumESPRESOO 6.5,6.6,6.7,6.8,7.0 GPU: 7.0
+1. ESM RISM QuantumESPRESOO
+1. LAMMPS 7Aug2019, 3Mar2020, 29Oct2020, 29Sep2021 u1/2/3
+1. GROMACS  2019, 2020, 2021, 2022
 1. GAMESS US (Need to get source file set up project.ini and locates in blobs directory)
 1. NAMD 2.14b1 (Need to get source file set up project.ini and locates in blobs directory)
 
@@ -29,8 +29,8 @@
 
 1. tar zxvf cyclecloud-QCMD<version>.tar.gz
 1. cd cyclecloud-QCMD<version>
-1. run "cyclecloud project upload azure-storage" for uploading template to CycleCloud
-1. "cyclecloud import_template -f templates/pbs_extended_nfs_qcmd.txt" for register this template to your CycleCloud
+1. run "cyclecloud project upload <azure-storage>" for uploading template to CycleCloud
+1. "cyclecloud import_template -f templates/openpbs_qcmd.txt" for register this template to your CycleCloud
 
 ## How to run QCMD
 
@@ -54,10 +54,10 @@ Azure CyceCloudのインストールに関しては、[こちら](https://docs.m
 以下の構成、特徴を持っています。
 
 ## Cluster アプリケーション
-1. QuantumESPRESOO 6.5
-1. ESM RISM QuantumESPRESOO (2020/5/9 Update: オリジナルのリンクがないため動作しない)
-1. LAMMPS 7Aug2019, 3Mar2020, 29Oct2020, 29Sep2021
-1. GROMACS 2020, 2019
+1. QuantumESPRESOO 6.5,6.6,6.7,6.8,7.0 GPU: 7.0
+1. ESM RISM QuantumESPRESOO
+1. LAMMPS 7Aug2019, 3Mar2020, 29Oct2020, 29Sep2021 u1/2/3
+1. GROMACS 2019, 2020, 2021, 2022
 1. GAMESS US (無料ですが、ライセンス制のため自身でファイル取得とproject.ini, blobsディレクトリへの設置が必要です)
 1. NAMD 2.14b1 (無料ですが、ライセンス制のため自身でファイル取得とproject.ini, blobsディレクトリへの設置が必要です)
 
@@ -68,11 +68,11 @@ Azure CyceCloudのインストールに関しては、[こちら](https://docs.m
 ## その他の機能
 1. OSS PBS ProジョブスケジューラをMasterノードにインストール、計算ノード(Execノード)にも自動設定
 1. H16r, H16r_Promo, HC44rs, HB60rs, HB120rs_v2を想定したテンプレート、イメージ
-	 - OpenLogic CentOS 7.6 HPC を利用 
+     - OpenLogic CentOS 7.6 HPC を利用 
 1. Masterノードに512GB * 2 のNFSストレージサーバを搭載
-	 - Executeノード（計算ノード）からNFSをマウント
+     - Executeノード（計算ノード）からNFSをマウント
 1. MasterノードのIPアドレスを固定設定
-	 - 一旦停止後、再度起動した場合にアクセスする先のIPアドレスが変更されない
+      - 一旦停止後、再度起動した場合にアクセスする先のIPアドレスが変更されない
 
 ![OSS PBS Default テンプレート構成](https://raw.githubusercontent.com/hirtanak/osspbsdefault/master/OSSPBSDefaultDiagram.png "OSS PBS Default テンプレート構成")
 
@@ -85,11 +85,10 @@ Azure CyceCloudのインストールに関しては、[こちら](https://docs.m
 1. cyclecloudコマンドラインからテンプレートインストール 
    - tar zxvf cyclecloud-QCMD<version>.tar.gz
    - cd cyclecloud-QCMD<version>
-   - cyclecloud project upload azure-storage
-   - cyclecloud import_template -f templates/pbs_extended_nfs_quantumespresso.txt
+   - cyclecloud project upload <azure-storage>(cyclecloud locker name)
+   - cyclecloud import_template -f templates/openpbs_qcmd.txt
 1. 削除したい場合、 cyclecloud delete_template QCMD コマンドで削除可能
 
 ***
 Copyright Hiroshi Tanaka, hirtanak@gmail.com, @hirtanak All rights reserved.
 Use of this source code is governed by MIT license that can be found in the LICENSE file.
-

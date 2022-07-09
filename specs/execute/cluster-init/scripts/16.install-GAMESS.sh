@@ -2,6 +2,8 @@
 # Copyright (c) 2020 Hiroshi Tanaka, hirtanak@gmail.com @hirtanak
 set -exuv
 
+exit 0
+
 SW=GAMESS
 echo "starting 16.install-${SW}.sh"
 
@@ -22,14 +24,14 @@ if [[ -z $CUSER ]]; then
    CUSER=$(grep "Added user" /opt/cycle/jetpack/logs/initialize.log | awk '{print $6}' | head -1)
    CUSER=${CUSER//\`/}
 fi
-echo ${CUSER} > /mnt/exports/shared/CUSER
+echo ${CUSER} > /shared/CUSER
 HOMEDIR=/shared/home/${CUSER}
 CYCLECLOUD_SPEC_PATH=/mnt/cluster-init/QCMD/execute
 
 # get Quantum ESPRESSO version
 GAMESS_FILENAME=$(jetpack config GAMESS_FILENAME)
 GAMESS_BUILD=$(jetpack config GAMESS_BUILD)
-GAMESS_DIR=${HOMEDIR}/apps/${GAMESS_BUILD}
+GAMESS_DIR=${HOMEDIR}/${GAMESS_BUILD}
 
 # get GAMESS version
 if [[ ${GAMESS_BUILD} = None ]]; then
@@ -38,8 +40,8 @@ fi
 
 # check files and directory
 if [[ ! -d ${GAMESS_DIR} ]]; then
-   tar zxfp ${HOMEDIR}/apps/${GAMESS_FILENAME} -C ${HOMEDIR}/apps
-   mv ${HOMEDIR}/apps/gamess ${GAMESS_DIR}
+   tar zxfp ${HOMEDIR}/${GAMESS_FILENAME} -C ${HOMEDIR}/apps
+   mv ${HOMEDIR}/gamess ${GAMESS_DIR}
    chown -R ${CUSER}:${CUSER} ${GAMESS_DIR}
 fi
 
@@ -67,8 +69,8 @@ if [[ ${GAMESS_BUILD} = "gamess-impi" ]]; then
       sed -i -e "s/MAXCPUS=32/MAXCPUS=${CORES}/" ${GAMESS_DIR}/ddi/compddi
       cd ${GAMESS_DIR} && sudo -u ${CUSER} /usr/bin/make clean | exit 0
       # set up files
-      sed -i -e "s:set\ work=/shared/home/azureuser/apps/:set work=${HOMEDIR}/apps/:" ${CYCLECLOUD_SPEC_PATH}/files/expect-impi
-      sed -i -e "s:set\ prefix=/shared/home/azureuser/apps/\$gamess/:set prefix=${GAMESS_DIR}:" ${CYCLECLOUD_SPEC_PATH}/files/expect-impi
+      sed -i -e "s:set\ work=/shared/home/azureuser/:set work=${HOMEDIR}/:" ${CYCLECLOUD_SPEC_PATH}/files/expect-impi
+      sed -i -e "s:set\ prefix=/shared/home/azureuser/\$gamess/:set prefix=${GAMESS_DIR}:" ${CYCLECLOUD_SPEC_PATH}/files/expect-impi
       /usr/bin/csh /mnt/cluster-init/QCMD/execute/files/expect-impi
       # buils settings
       declare I_MPI_ROOT
@@ -95,15 +97,12 @@ cp ${CYCLECLOUD_SPEC_PATH}/files/jobgamessimpi.sh ${HOMEDIR}/scr
 chown -R ${CUSER}:${CUSER} ${GAMESS_DIR}/scr
 
 # general file settings
-if [[ ! -d ${HOMEDIR}/logs ]]; then
-   mkdir -p ${HOMEDIR}/logs
-   chown -R ${CUSER}:${CUSER} ${HOMEDIR}/logs
-fi
+mkdir -p ${HOMEDIR}/logs
+chown ${CUSER}:${CUSER} ${HOMEDIR}/logs
 cp /opt/cycle/jetpack/logs/cluster-init/QCMD/execute/scripts/16.install-${SW}.sh.out ${HOMEDIR}/logs/
 chown ${CUSER}:${CUSER} ${HOMEDIR}/logs/16.install-${SW}.sh.out
 
 #clean up
-popd
 popd
 
 

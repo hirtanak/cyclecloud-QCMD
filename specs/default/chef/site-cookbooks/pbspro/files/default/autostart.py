@@ -21,6 +21,11 @@ import pbscc
 from copy import deepcopy
 import numbers
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 class PBSAutostart:
     '''
@@ -64,10 +69,25 @@ class PBSAutostart:
         # race condition of asking the status of the queue twice.
         running_raw_jobs_str, running_converter = self.driver.running_jobs()
         queued_raw_jobs_str, queued_converter = self.driver.queued_jobs()
+        queued_raw_arr_obs_str, queued_arr_converter = self.driver.queued_array_jobs()
         
         running_raw_jobs = running_converter(running_raw_jobs_str)
-        queued_raw_jobs = queued_converter(queued_raw_jobs_str)
+        # ignore any array jobs in here - this returns only idle array jobs that haven't started a single task.
+        # so instead, in our next call we will get all job arrays and just ignore those with Queued:0 in array state count.
+        queued_raw_single_jobs = [x for x in queued_converter(queued_raw_jobs_str) if not x.get("array")]
+        queued_raw_arr_jobs = queued_arr_converter(queued_raw_arr_obs_str)
         
+        def sort_by_job_id(raw_job):
+            job_id = raw_job.get("job_id")
+            if not job_id:
+                return -1
+            for i in range(len(job_id)):
+                if not job_id[i].isdigit():
+                    break
+            
+            return int(job_id[:i])
+        
+        queued_raw_jobs = sorted(queued_raw_single_jobs + queued_raw_arr_jobs, key=sort_by_job_id)
         raw_jobs = []
         
         for raw_job in running_raw_jobs:
@@ -111,7 +131,7 @@ class PBSAutostart:
                     if "ncpus" not in chunk:
                         chunk["ncpus"] = "1"
                     
-                    for key, value in chunk.iteritems():
+                    for key, value in chunk.items():
                         if key not in ["select", "nodect"]:
                             try:
                                 value = pbscc.parse_gb_size(key, value) * chunk["nodect"]
@@ -135,7 +155,7 @@ class PBSAutostart:
             if pbs_job["job_state"].upper() == pbscc.JOB_STATE_RUNNING:
                 # update running job
                 live_resources = pbscc.parse_exec_vnode(raw_job["exec_vnode"])
-                for key, value in live_resources.iteritems():
+                for key, value in live_resources.items():
                     # live resources are calculated on a per node basis, but the Resource_List is based
                     # on a total basis.
                     # we will normalize this below
@@ -182,16 +202,15 @@ class PBSAutostart:
                 autoscale_job.placeby = placeby.split("=", 1)[-1]
             
             if is_array:
-                array_count = 0
                 array_tasks = raw_job["array_state_count"]
-
-                # Only grab the first two array task states (queued and running)
-                for ajob in str(array_tasks).split(" ")[:2]:
-                    array_count += int(ajob.split(":")[1])
-
-                # Multiply the number of cpus needed by number of tasks in the array
-                if array_count != 0:
-                    slots_per_job *= array_count
+                # we only want the remaining number that are queued. The running tasks are handled separately.
+                # example: "Queued:6 Running:2 Exiting:0 Expired:0"
+                array_count = int(str(array_tasks).split(" ")[0].split(":")[1])
+                if array_count == 0:
+                    pbscc.debug("Job {} has no remaining tasks. Skipping.".format(raw_job["job_id"]))
+                    continue
+                # Multiply the number of slots needed by number of tasks in the array
+                slots_per_job *= array_count
             else:
                 array_count = 1
                     
@@ -201,13 +220,13 @@ class PBSAutostart:
             if group_jobs and placement.get("grouping"): 
                 autoscale_job['grouped'] = True
                 autoscale_job["nodes"] *= array_count
-                autoscale_job.placeby_value = "single"
+                autoscale_job.placeby_value = pbs_job.Resource_List.get("group_id") or None
             elif is_array:
                 autoscale_job["nodes"] *= array_count
 
             autoscale_job.ncpus += slots_per_job
             
-            for attr, value in pbs_job.Resource_List.iteritems():
+            for attr, value in pbs_job.Resource_List.items():
                 if attr not in scheduler_resources:
                     # if it isn't a scheduler level attribute, don't bother 
                     # considering it for autoscale as the scheduler won't respect it either.
@@ -255,7 +274,7 @@ class PBSAutostart:
                 continue
                 
             # ensure that any custom attribute the user specified, like disk = 100G, gets parsed correctly
-            for key, value in machinetype.iteritems():
+            for key, value in machinetype.items():
                 try:
                     machinetype[key] = pbscc.parse_gb_size(key, value)
                 except InvalidSizeExpressionError:
@@ -344,7 +363,7 @@ class PBSAutostart:
             pbscc.info("Shutting down instance ids %s" % instance_ids_to_shutdown.keys())
             self.clusters_api.shutdown(instance_ids_to_shutdown.keys())
             
-            for hostname in instance_ids_to_shutdown.itervalues():
+            for hostname in instance_ids_to_shutdown.values():
                 pbscc.info("Deleting %s" % hostname)
                 self.driver.delete_host(hostname)
         
@@ -360,6 +379,10 @@ class PBSAutostart:
             idle_after_threshold = float(self.cc_config.get("cyclecloud.cluster.autoscale.idle_time_after_jobs", 300))
         
             for m in idle_machines:
+                if m.get_attr("keep_alive", False):
+                    pbscc.debug("Ignoring %s for scaledown because KeepAlive=true", m.hostname)
+                    continue
+                
                 if m.get_attr("instance_id", "") not in booting_instance_ids:
                     pbscc.debug("Could not find instance id in CycleCloud %s" % m.get_attr("instance_id", ""))
                     continue
@@ -410,6 +433,15 @@ class PBSAutostart:
         nodes_by_instance_id = Record()
         
         for pbsnode in pbsnodes.values():
+            instance_id = pbsnode["resources_available"].get("instance_id", "")
+            # use this opportunity to set some things that can change during the runtime (keepalive) or are not always set
+            # by previous versions (machinetype/nodearray)
+            if instance_id and booting_instance_ids.get(instance_id):
+                node = booting_instance_ids.get(instance_id)
+                pbsnode["resources_available"]["keep_alive"] = node.get("KeepAlive", False)
+                pbsnode["resources_available"]["machinetype"] = pbsnode["resources_available"].get("machinetype") or node.get("MachineType")
+                pbsnode["resources_available"]["nodearray"] = pbsnode["resources_available"].get("nodearray") or node.get("Template")
+                
             inst = self.process_pbsnode(pbsnode, instance_ids_to_shutdown, nodearray_definitions)
             if not inst:
                 continue
@@ -421,7 +453,7 @@ class PBSAutostart:
                 booting_instance_ids.pop(instance_id)
             nodes_by_instance_id[instance_id] = pbsnode
         
-        for instance_id, node in list(booting_instance_ids.iteritems()):
+        for instance_id, node in list(booting_instance_ids.items()):
             nodearray_name = node["Template"]
             machinetype_name = node["MachineType"]
             
@@ -430,7 +462,7 @@ class PBSAutostart:
             except KeyError as e:
                 raise ValueError("machine is %s, key is %s, rest is %s" % (nodearray_name, str(e), nodearray_definitions))
             
-            inst = machine.new_machine_instance(machinetype, hostname=node.get("hostname"), instance_id=node.get("InstanceId"), group_id=node.get("placementGroupId"))
+            inst = machine.new_machine_instance(machinetype, hostname=node.get("hostname"), instance_id=node.get("InstanceId"), group_id=node.get("placementGroupId"), keep_alive=node.get("KeepAlive", False))
             existing_machines.append(inst)
             nodes_by_instance_id[instance_id] = node
         
@@ -544,7 +576,7 @@ def compress_queued_jobs(autoscale_jobs):
         comp_bucket = (job.nodearray, job.nodes, job.placeby, job.placeby_value, job.exclusive, job.packing_strategy) + tuple(job.resources.items())
         compression_buckets[comp_bucket].append(job)
         
-    for comp_bucket, job_list in compression_buckets.iteritems():
+    for comp_bucket, job_list in compression_buckets.items():
         if len(job_list) == 1:
             ret.extend(job_list)
             continue

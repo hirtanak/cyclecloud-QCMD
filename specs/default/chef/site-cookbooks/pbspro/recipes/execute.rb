@@ -3,22 +3,30 @@
 #
 
 pbsprover = node[:pbspro][:version]
+plat_ver = node['platform_version'].to_i
+pbsdist = "el#{plat_ver}"
 
-package_name = "pbspro-execution-#{pbsprover}.x86_64.rpm"
+if pbsprover.to_i < 20 
+  package_name = "pbspro-execution-#{pbsprover}.x86_64.rpm"
+else
+  package_name = "openpbs-execution-#{pbsprover}.x86_64.rpm"
+end
 
 jetpack_download package_name do
   project 'QCMD'
 end
 
-yum_package package_name do
+package package_name do
   source "#{node['jetpack']['downloads']}/#{package_name}"
   action :install
 end
 
-slot_type = node[:pbspro][:slot_type] || "execute"
+nodearray = node[:cyclecloud][:node][:template] || "execute"
+slot_type = node[:pbspro][:slot_type] || nodearray
+machinetype = node[:azure][:metadata][:compute][:vmSize]
 
-placement_group = node[:cyclecloud][:node][:placement_group] || nil
-is_node_grouped = node[:pbspro][:is_grouped]
+placement_group = node[:cyclecloud][:node][:placement_group_id] || node[:cyclecloud][:node][:placement_group] || nil
+is_node_grouped = node[:pbspro][:is_hpc] || !placement_group.nil?
 instance_id = node[:cyclecloud][:instance][:id]
 
 custom_resources = Hash.new {}
@@ -26,14 +34,7 @@ if node[:autoscale] then
     custom_resources = node[:autoscale].to_h
 end
 
-if custom_resources.empty? || custom_resources.nil? then
-	set_custom_resources = "true"
-else
-    custom_resources.delete("disabled")
-	set_custom_resources = custom_resources.map{ |key, value| "/opt/pbs/bin/qmgr -c 's n #{node[:hostname]} resources_available.#{key}=#{value}'"}.join(" && ")
-end
-
-schedint = cluster.scheduler
+schedint = cluster.scheduler.split(".").first
 slots = node[:pbspro][:slots] || nil
 
 if schedint != nil
@@ -62,6 +63,15 @@ if schedint != nil
   end
 end
 
+
+cookbook_file "/var/spool/pbs/modify_limits.sh" do
+  source "modify_limits.sh"
+  mode "0755"
+  owner "root"
+  group "root"
+  action :create
+end
+
 node_created_guard = "#{node['cyclecloud']['chefstate']}/pbs.nodecreated"
 
 bash "add-node-to-scheduler" do
@@ -86,6 +96,8 @@ defer_block 'Defer setting core count and slot_type, and start of PBS pbs_mom un
   end
 
   set_slot_type = "/opt/pbs/bin/qmgr -c 's n #{node[:hostname]} resources_available.slot_type=#{slot_type}'"
+  set_nodearray = "/opt/pbs/bin/qmgr -c 's n #{node[:hostname]} resources_available.nodearray=#{nodearray}'"
+  set_machinetype = "/opt/pbs/bin/qmgr -c 's n #{node[:hostname]} resources_available.machinetype=#{machinetype}'"
   set_ungrouped = "true"
 
   if not is_node_grouped then
@@ -107,13 +119,32 @@ defer_block 'Defer setting core count and slot_type, and start of PBS pbs_mom un
   end
  
   set_instance_id = "/opt/pbs/bin/qmgr -c 's n #{node[:hostname]} resources_available.instance_id=#{instance_id}'"
-   
+
+  if custom_resources.empty? || custom_resources.nil? then
+    set_custom_resources = "true"
+  else
+    custom_resources.delete("disabled")
+    if custom_resources.empty? then
+        set_custom_resources = "true"
+    else    
+        set_custom_resources = custom_resources.map{ |key, value| "/opt/pbs/bin/qmgr -c 's n #{node[:hostname]} resources_available.#{key}=#{value}'"}.join(" && ")
+    end
+  end
+
+  execute "modify_limits" do
+    command "/var/spool/pbs/modify_limits.sh && touch /etc/modify_limits.config"
+    creates "/etc/modify_limits.config"
+  end
+  
+  
   execute "set-node-slot_type" do
     command lazy {<<-EOS
       #{set_slot_type} && \
+      #{set_nodearray} && \
       #{set_group_id} && \
       #{set_ungrouped} && \
       #{set_instance_id} && \
+      #{set_machinetype} && \
       #{set_custom_resources} && \
       touch #{node_created_guard}
       EOS

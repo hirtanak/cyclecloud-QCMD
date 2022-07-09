@@ -1,0 +1,59 @@
+#!/bin/csh
+ 
+#   Compilation configuration for GAMESS
+#   Generated on ip-0A00040D
+#   Generated at Mon Feb 17 11:03:53 UTC 2020
+ 
+#                GAMESS Paths                  #
+setenv GMS_PATH            ${HOME}/apps/gamess
+setenv GMS_BUILD_DIR       ${HOME}/apps/gamess/build
+ 
+#                Machine Type                  #
+setenv GMS_TARGET          linux64
+ 
+#            FORTRAN Compiler Setup            #
+setenv GMS_FORTRAN         gfortran
+setenv GMS_GFORTRAN_VERNO  9.2
+ 
+#         Mathematical Library Setup           #
+setenv GMS_MATHLIB         atlas
+setenv GMS_MATHLIB_PATH    /usr/lib64/atlas
+setenv GMS_AMD_BLAS_PATH   
+#         parallel message passing model setup
+setenv GMS_DDI_COMM        mpi
+setenv GMS_MPI_LIB         mvapich2
+setenv GMS_MPI_PATH        /opt/mvapich2-2.3.2/
+setenv GMS_MVAPICH2_VERNO  2.3
+ 
+#   Michigan State University Coupled Cluster  #
+setenv GMS_MSUCC           false
+ 
+# Please match any manual changes to the       #
+# GMS_MSUCC flag in /shared/home/azureuser/gamess/build/Makefile     
+# before running make                          #
+ 
+#         LIBCCHEM CPU/GPU Code Interface      #
+setenv GMS_LIBCCHEM        false
+ 
+#      Intel Xeon Phi Build: none/knc/knl      #
+setenv GMS_PHI             none
+ 
+#         Shared Memory Type: sysv/posix       #
+setenv GMS_SHMTYPE         sysv
+ 
+#      GAMESS OpenMP support: true/false       #
+setenv GMS_OPENMP          false
+ 
+# Please match any manual changes to the       #
+# GMS_OPENM flag in /shared/home/azureuser/gamess/build/Makefile     
+# before running make                          #
+ 
+#             Singularity Setup                #
+setenv GMS_CONTAINER       
+setenv GMS_CONTAINER_PATH  ${HOME}/apps/gamess
+ 
+################################################i
+# Added any additional environmental variables #
+# or module loads below if needed.             #
+################################################
+setenv GMS_FPE_FLAGS       '-ffpe-trap=invalid,zero,overflow'

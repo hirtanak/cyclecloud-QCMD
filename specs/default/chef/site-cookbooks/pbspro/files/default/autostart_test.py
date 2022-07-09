@@ -98,7 +98,7 @@ class MockClustersAPI:
     def status(self, nodes=False):
         if nodes:
             self.cluster_def["nodes"] = nodes = []
-            for node_list in self._nodes.itervalues():
+            for node_list in self._nodes.values():
                 nodes.extend(node_list)
         else:
             self.cluster_def.pop("nodes", [])
@@ -183,7 +183,7 @@ class PBSQ:
                   "job_id": job_id,
                   "job_state": job_state}
         
-        for key, value in resource_list.iteritems():
+        for key, value in resource_list.items():
             jobdef["resource_list"][key] = value
             
         jobdef["resource_list"]["nodect"] = 1      
@@ -203,7 +203,7 @@ class PBSQ:
             chunk_totals = {}
             for chunk in pbscc.parse_select(jobdef):
                 chunk["ncpus"] = chunk.get("ncpus", 1)
-                for key, value in chunk.iteritems():
+                for key, value in chunk.items():
                     if key == "select":
                         continue
                     try:
@@ -215,7 +215,7 @@ class PBSQ:
                     except InvalidSizeExpressionError:
                         chunk_totals[key] = value
                         
-            for key, value in chunk_totals.iteritems():
+            for key, value in chunk_totals.items():
                 if key != "select":
                     jobdef["resource_list"][key] = value
         
@@ -365,6 +365,14 @@ class Test(unittest.TestCase):
         '''
         q = PBSQ()
         q.qsub(select_expr="1:ncpus=16:mem=20G", place="pack")
+        self.assertEquals([self._machine_request(count=1)], self._autoscale(q))
+        
+    def test_pbsuserguide_ex1_assume_single(self):
+        '''
+            same as test_pbsuserguide_ex1 but assume -l select=ncpus=16:mem=20G instead of -l select=1...
+        '''
+        q = PBSQ()
+        q.qsub(select_expr="ncpus=16:mem=20G", place="pack")
         self.assertEquals([self._machine_request(count=1)], self._autoscale(q))
         
     def test_pbsuserguide_ex2(self):
@@ -1044,7 +1052,7 @@ class Test(unittest.TestCase):
         # create them as hosts, but the jobs still aren't running...
         for n, m in enumerate(machines):
             host_attrs = {}
-            for name, attr in m.iterattrs():
+            for name, attr in m.attrs():
                 host_attrs[name] = attr.current_value
         
             host_attrs.pop("hostname", "")
