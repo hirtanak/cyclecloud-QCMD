@@ -404,6 +404,8 @@ CMD=$(ls -al ${HOMEDIR} | sed -n 2p | cut -d " " -f 3)
 if [ $CMD != ${CUSER} ]; then 
   chown ${CUSER}:${CUSER} -R ${HOMEDIR}/${QE_DIR}
 fi
+chown ${CUSER}:${CUSER} -R ${HOMEDIR}/${QE_DIR}/bin
+chown ${CUSER}:${CUSER} -R ${HOMEDIR}/${QE_DIR}/build
 
 # .bashrc settings
 set +u

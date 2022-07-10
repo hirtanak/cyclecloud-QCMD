@@ -38,8 +38,8 @@ if [[ ! -f ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz ]]; then
 	   -O ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz
    chown ${CUSER}:${CUSER} ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz
 fi
-if [[ ! -d ${HOMEDIR}/gromacs-${GROMACS_VERSION} ]]; then
-   tar zxfp ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz -C ${HOMEDIR}
+if [[ ! -d ${HOMEDIR}/gromacs-${GROMACS_VERSION}/bin ]]; then
+   tar zxfp ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz -C ${HOMEDIR}/
    chown -R ${CUSER}:${CUSER} ${HOMEDIR}/gromacs-${GROMACS_VERSION}
 fi
 

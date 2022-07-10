@@ -87,13 +87,13 @@ LAMMPS_BUILD_OPTION=$(cat /shared/GPU)
 if [ -z "$LAMMPS_BUILD_OPTION" ]; then
   LAMMPS_BUILD_OPTION=Default
 fi
-OPENMPI_PATH=$(ls /opt/ | grep openmpi)
-export PATH=/opt/${OPENMPI_PATH}/bin:${HOMEDIR}/${LAMMPS_DIR}/src:$PATH
-export LD_LIBRARY_PATH=/opt/${OPENMPI_PATH}/lib:$LD_LIBRARY_PATH
+OPENMPI_PATH=$(ls -d /opt/openmpi*)
+export PATH=${OPENMPI_PATH}/bin:${HOMEDIR}/${LAMMPS_DIR}/src:$PATH
+export LD_LIBRARY_PATH=${OPENMPI_PATH}/lib:$LD_LIBRARY_PATH
 set -eu
 
 ## GCC
-GCC_PATH=$(ls /opt/ | grep ^gcc-)
+GCC_PATH=$(ls -d /opt/gcc-*)
 GCC_VERSION=920
 if [ -z $GCC_PATH ]; then
    GCC_VERSION=485
@@ -181,7 +181,7 @@ case ${LAMMPS_BUILD_OPTION} in
         
 	# custom #2
         CMAKE_ROOT=${HOMEDIR}/CMake-3.23.2/bin/cmake ${HOMEDIR}/CMake-3.23.2/bin/cmake ${HOMEDIR}/${LAMMPS_DIR}/cmake \
-		-DBUILD_MPI=on -DMPI_CXX_COMPILER=/opt/${OPENMPI_PATH}/bin/mpicxx -DPKG_MOLECULE=on -DPKG_KSPACE=on \
+		-DBUILD_MPI=on -DMPI_CXX_COMPILER=${OPENMPI_PATH}/bin/mpicxx -DPKG_MOLECULE=on -DPKG_KSPACE=on \
 		-DPKG_REAXFF=on -DPKG_MANYBODY=on -DPKG_MEAM=on -DPKG_MC=on -DPKG_QMMM=on 
         make -j ${CORES}	
         mkdir -p ${HOMEDIR}/${LAMMPS_DIR}/bin 
@@ -238,8 +238,8 @@ case ${LAMMPS_BUILD_OPTION} in
       if [[ ! -f ${HOMEDIR}/${LAMMPS_DIR}/bin/lmp-kokkos ]]; then
         echo "LAMMPS kokkos building...."
         ${HOMEDIR}/CMake-${CMAKE_VERSION}/bin/cmake ../cmake -DCMAKE_BUILD_TYPE=Debug -DPKG_KOKKOS=on -DKokkos_ENABLE_OPENMP=yes \
-	       	-DBUILD_MPI=on -DBUILD_OMP=on -DCMAKE_CXX_COMPILER=/opt/${GCC_PATH}/bin/g++ \
-		-DMPI_CXX_COMPILER=/opt/${OPENMPI_PATH}/bin/mpicxx -DPKG_MOLECULE=on -DPKG_KSPACE=on -DPKG_REAXFF=on \
+	       	-DBUILD_MPI=on -DBUILD_OMP=on -DCMAKE_CXX_COMPILER=${GCC_PATH}/bin/g++ \
+		-DMPI_CXX_COMPILER=${OPENMPI_PATH}/bin/mpicxx -DPKG_MOLECULE=on -DPKG_KSPACE=on -DPKG_REAXFF=on \
 		-DPKG_MANYBODY=on -DPKG_MEAM=on -DPKG_MC=on -DPKG_QMMM=on -DMULTITHREADED_BUILD=${CORES}
         ${HOMEDIR}/CMake-${CMAKE_VERSION}/bin/cmake --build ${HOMEDIR}/${LAMMPS_DIR}/build
         mkdir -p ${HOMEDIR}/${LAMMPS_DIR}/bin && true
@@ -269,7 +269,7 @@ case ${LAMMPS_BUILD_OPTION} in
 
       # build
       /usr/local/bin/cmake ../cmake -DBUILD_MPI=on -DBUILD_OMP=on -DCMAKE_CXX_COMPILER=/bin/g++ \
-	      -DMPI_CXX_COMPILER=/opt/${OPENMPI_PATH}/bin/mpicxx -DPKG_MOLECULE=on -DPKG_KSPACE=on -DPKG_REAXFF=on \
+	      -DMPI_CXX_COMPILER=${OPENMPI_PATH}/bin/mpicxx -DPKG_MOLECULE=on -DPKG_KSPACE=on -DPKG_REAXFF=on \
 	      -DPKG_MANYBODY=on -DPKG_MEAM=on -DPKG_MC=on -DPKG_QMMM=on -DPKG_GPU=on -DGPU_API=cuda -DGPU_ARCH=sm_80 \
 	      -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs -DBIN2C=/usr/local/cuda-11.6/bin/bin2c
       /usr/local/bin/cmake --build ${HOMEDIR}/${LAMMPS_DIR}/build

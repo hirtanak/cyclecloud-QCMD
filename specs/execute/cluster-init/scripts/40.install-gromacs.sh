@@ -28,9 +28,10 @@ if [[ ${GROMACS_VERSION} = None ]]; then
   exit 0
 fi
 
+OPENMPI_PATH=$(ls -d /opt/openmpi*)
+
 # cmake version
 set +eu
-#echo $CMAKE_VERSION > /shared/CMAKE_VERSION
 CMAKE_VERSION=$(cat /shared/CMAKE_VERSION)
 if [ -z $CMAKE_VERSION ]; then
   CMAKE_VERSION=3.21.4
@@ -42,14 +43,6 @@ tmpdir=$(mktemp -d)
 pushd $tmpdir
 
 yum install -y -q openssl-devel libgcrypt-devel
-#yum remove -y -q cmake gcc
-
-# build setting
-#alias gcc=/opt/gcc-9.2.0/bin/gcc
-#alias c++=/opt/gcc-9.2.0/bin/c++
-# PATH settings
-#export PATH=/opt/gcc-9.2.0/bin/:$PATH
-#export PATH=${HOMEDIR}/cmake-${CMAKE_VERSION}-Linux-x86_64/bin:$PATH
 
 ## GCC
 set +eu
@@ -61,30 +54,10 @@ if [ -z $GCC_PATH ]; then
 fi
 set -eu
 
-# need "set +/-" setting for parameter proceesing
-set +u
-#OPENMPI_PATH=$(ls /opt/ | grep openmpi)
-OPENMPI_PATH=$(ls -d /opt/openmpi*)
-#export PATH=/opt/${OPENMPI_PATH}/bin:$PATH
-#export LD_LIBRARY_PATH=$GCC_PATH/lib64:$LD_LIBRARY_PATH
-CMD=$(grep "cmake" ${HOMEDIR}/.bashrc | head -1)
-if [[ -z ${CMD} ]]; then
-  CMD1=$(grep '^export PATH' ${HOMEDIR}/.bashrc | head -1)
-  CMD2=${CMD1#export PATH=}
-  #echo $CMD2
-  if [[ -n ${CMD2} ]]; then
-    sed -i -e "s!^export PATH!export PATH=${HOMEDIR}\/CMake-${CMAKE_VERSION}\/bin:${CMD2}!g" ${HOMEDIR}/.bashrc
-  fi
-  if [[ -z ${CMD2} ]]; then 
-    (echo "export PATH=${HOMEDIR}/CMake-${CMAKE_VERSION}/bin:$PATH") >> ${HOMEDIR}/.bashrc
-  fi
-fi
-set -u
-
 # getting compile setting
-VMSKU=`cat /proc/cpuinfo | grep "model name" | head -1 | awk '{print $7}'`
-CORES=$(($(grep cpu.cores /proc/cpuinfo | wc -l) + 1))
 set +u
+VMSKU=`cat /proc/cpuinfo | grep "model name" | head -1 | awk '{print $6}'`
+CORES=$(($(grep cpu.cores /proc/cpuinfo | wc -l) + 1))
 declare -l PLATFORM
 case "$CORES" in
   "44","45" ) PLATFORM=$(echo "-DGMX_SIMD=AVX_512") ;;
@@ -92,30 +65,41 @@ esac
 echo "PLATFORM: $PLATFORM"
 set -u
 
+# Don't run if we've already expanded the GROMACS tarball. Download GROMACS
+if [[ ! -f ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz ]]; then
+   wget --no-check-certificate -nv -q https://ftp.gromacs.org/gromacs/gromacs-${GROMACS_VERSION}.tar.gz \
+           -O ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz
+   chown ${CUSER}:${CUSER} ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz
+fi
+if [[ ! -f ${HOMEDIR}/gromacs-${GROMACS_VERSION}/src/CMakeLists.txt ]]; then
+   tar zxfp ${HOMEDIR}/gromacs-${GROMACS_VERSION}.tar.gz -C ${HOMEDIR}/
+   chown -R ${CUSER}:${CUSER} ${HOMEDIR}/gromacs-${GROMACS_VERSION}
+fi
+
 # gromacs build and install
 if [[ ! -d ${HOMEDIR}/gromacs-${GROMACS_VERSION}/bin ]]; then 
   rm -rf ${HOMEDIR}/gromacs-${GROMACS_VERSION}/build && mkdir -p ${HOMEDIR}/gromacs-${GROMACS_VERSION}/build
   chown ${CUSER}:${CUSER} ${HOMEDIR}/gromacs-${GROMACS_VERSION}/build
   # check cmake version
-  if [[ ! -f  ${HOMEDIR}/gromacs-${GROMACS_VERSION}/bin/ww ]]; then
+  if [[ ! -f  ${HOMEDIR}/gromacs-${GROMACS_VERSION}/bin/gmx_mpi ]]; then
     ${HOMEDIR}/CMake-${CMAKE_VERSION}/bin/cmake -C ${HOMEDIR}/gromacs-${GROMACS_VERSION}/ clean | exit 0
     dnf install -y -q sphinx 
-    #python3-pip
-    rpm --rebuilddb && true
-    dnf module install -y -q python39
+    dnf module install -y -q python38
     # Intel Platform
     set +u
     if [[ -n $PLATFORM ]]; then
       cd ${HOMEDIR}/gromacs-${GROMACS_VERSION}/build && sudo -u ${CUSER} time ${HOMEDIR}/CMake-${CMAKE_VERSION}/bin/cmake \
 	      ${HOMEDIR}/gromacs-${GROMACS_VERSION} -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON \
-	      -DCMAKE_C_COMPILER="/opt/${OPENMPI_PATH}/bin/mpicc" -DCMAKE_CXX_COMPILER="/opt/${OPENMPI_PATH}/bin/mpicxx" \
-	      -DCMAKE_INSTALL_PREFIX="${HOMEDIR}/gromacs-${GROMACS_VERSION}" -DGMX_MPI=on ${PLATFORM}
+	      -DCMAKE_C_COMPILER="${OPENMPI_PATH}/bin/mpicc" -DCMAKE_CXX_COMPILER="${OPENMPI_PATH}/bin/mpicxx" \
+	      -DCAMKE_Fortran_COMPILER="${OPENMPI_PATH}/bin/gfortran" -DCMAKE_INSTALL_PREFIX="${HOMEDIR}/gromacs-${GROMACS_VERSION}" \
+	      -DGMX_MPI=on ${PLATFORM} -DMPI_HOME="${OPENMPI_PATH}" -DMPIEXEC_EXECUTABLE="${OPENMPI_PATH}/bin/mpiexec"
     else
       # AMD platform
       cd ${HOMEDIR}/gromacs-${GROMACS_VERSION}/build && sudo -u ${CUSER} time ${HOMEDIR}/CMake-${CMAKE_VERSION}/bin/cmake \
               ${HOMEDIR}/gromacs-${GROMACS_VERSION} -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON \
-              -DCMAKE_C_COMPILER="/opt/${OPENMPI_PATH}/bin/mpicc" -DCMAKE_CXX_COMPILER="/opt/${OPENMPI_PATH}/bin/mpicxx" \
-              -DCMAKE_INSTALL_PREFIX="${HOMEDIR}/gromacs-${GROMACS_VERSION}" -DGMX_MPI=on
+              -DCMAKE_C_COMPILER="${OPENMPI_PATH}/bin/mpicc" -DCMAKE_CXX_COMPILER="${OPENMPI_PATH}/bin/mpicxx" \
+              -DCAMKE_Fortran_COMPILER="${OPENMPI_PATH}/bin/gfortran" -DCMAKE_INSTALL_PREFIX="${HOMEDIR}/gromacs-${GROMACS_VERSION}" \
+	      -DGMX_MPI=on -DMPI_HOME="${OPENMPI_PATH}" -DMPIEXEC_EXECUTABLE="${OPENMPI_PATH}/bin/mpiexec"
     fi
     set -u
     /bin/make -j $CORES install

@@ -322,10 +322,12 @@ case ${QE_BUILD_OPTION} in
 esac
 
 # QuantumESPRESSO パーミッション処理
-CMD=$(ls -al ${HOMEDIR} | sed -n 2p | cut -d " " -f 3)
-if [ $CMD != ${CUSER} ]; then 
-  chown ${CUSER}:${CUSER} -R ${HOMEDIR}/${QE_DIR}
+CMD=$(ls -al ${HOMEDIR}/${QE_DIR} | sed -n 2p | cut -d " " -f 3)
+if [[  -n ${CMD} ]]; then
+  chown -R ${CUSER}:${CUSER} ${HOMEDIR}/${QE_DIR}
 fi
+chown ${CUSER}:${CUSER} -R ${HOMEDIR}/${QE_DIR}/bin
+chown ${CUSER}:${CUSER} -R ${HOMEDIR}/${QE_DIR}/build
 
 # .bashrc settings
 set +u
@@ -341,10 +343,6 @@ if [[ ! -f ${HOMEDIR}/qerun.sh ]]; then
   chmod +x ${HOMEDIR}/qerun.sh
   chown ${CUSER}:${CUSER} ${HOMEDIR}/qerun.sh
 fi
-CMD3=$(ls -al ${HOMEDIR}/${QE_DIR} | sed -n 2p | cut -d " " -f 3)
-if [[  -n ${CMD3} ]]; then
-  chown -R ${CUSER}:${CUSER} ${HOMEDIR}/${QE_DIR}
-fi
 
 # log file settings
 FILEDATE=$(date +"%Y%m%d%h%m")
@@ -353,7 +351,6 @@ cp /opt/cycle/jetpack/logs/cluster-init/QCMD/execute/scripts/21.execute-install-
 chown ${CUSER}:${CUSER} ${HOMEDIR}/logs/*21.execute-install-${SW}.sh.$FILEDATE.out
 
 #clean up
-#popd
 rm -rf $tmpdir
 
 
