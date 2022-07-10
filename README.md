@@ -14,9 +14,9 @@
 1. GAMESS US (Need to get source file set up project.ini and locates in blobs directory)
 1. NAMD 2.14b1 (Need to get source file set up project.ini and locates in blobs directory)
 
-### Windows VM Application
-1. Paraview 5.7.0
-1. VMD 1.9.3 (Need to get source file set up project.ini and locates in blobs directory)
+~~### Windows VM Application~~
+~~1. Paraview 5.7.0~~
+~~1. VMD 1.9.3 (Need to get source file set up project.ini and locates in blobs directory)~~
 
 ### Support Functions
 1. OSS PBS Pro job scheduler environment
@@ -61,9 +61,9 @@ Azure CyceCloudのインストールに関しては、[こちら](https://docs.m
 1. GAMESS US (無料ですが、ライセンス制のため自身でファイル取得とproject.ini, blobsディレクトリへの設置が必要です)
 1. NAMD 2.14b1 (無料ですが、ライセンス制のため自身でファイル取得とproject.ini, blobsディレクトリへの設置が必要です)
 
-## Windows VM アプリケーション
-1. Paraview 5.7.0
-1. VMD 1.9.3 (無料ですが、ライセンス制のため自身でファイル取得とproject.ini, blobsディレクトリへの設置が必要です)
+~~## Windows VM アプリケーション~~
+~~1. Paraview 5.7.0~~
+~~1. VMD 1.9.3 (無料ですが、ライセンス制のため自身でファイル取得とproject.ini, blobsディレクトリへの設置が必要です)~~
 
 ## その他の機能
 1. OSS PBS ProジョブスケジューラをMasterノードにインストール、計算ノード(Execノード)にも自動設定
